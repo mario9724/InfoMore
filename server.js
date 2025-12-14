@@ -2,7 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const app = express();
 
-const TMDB_API_KEY = 'TU_API_KEY_TMDB_AQUI'; // gratis en themoviedb.org
+const TMDB_API_KEY = '0352d89c612c3b5238db30c8bfee18e2'; // gratis en themoviedb.org
 
 // Idioma que uses en Stremio/TMDb, por ejemplo 'es-ES' o 'en-US'
 const TMDB_LANGUAGE = 'es-ES';
