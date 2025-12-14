@@ -1,4 +1,4 @@
-app.get('/stream/:type/:id.json', async (req, res) => {
+
   const { type, id } = req.params;
 
   console.log('Petición desde Stremio: tipo =', type, 'id =', id);
