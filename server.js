@@ -1,3 +1,13 @@
+app.get('/stream/:type/:id.json', async (req, res) => {
+  const { type, id } = req.params;
+
+  console.log('Petición desde Stremio: tipo =', type, 'id =', id);
+
+  const config = req.query.config || {};
+  const YOUTUBE_API_KEY = config.youtubeApiKey;
+  const trailerLanguage = config.trailerLanguage || 'es-ES';
+  // ...
+});
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
