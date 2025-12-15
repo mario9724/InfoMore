@@ -602,51 +602,51 @@ function getRegionFromLang(lang) {
 function getTrailerTitle(lang, mainTitle) {
   const l = (lang || 'en-US').toLowerCase();
   if (!mainTitle) return '';
-  if (l.startsWith('es')) return \`Tráiler de \${mainTitle}\`;
-  if (l.startsWith('pt')) return \`Trailer de \${mainTitle}\`;
-  if (l.startsWith('fr')) return \`Bande-annonce de \${mainTitle}\`;
-  if (l.startsWith('de')) return \`Trailer zu \${mainTitle}\`;
-  if (l.startsWith('it')) return \`Trailer di \${mainTitle}\`;
-  if (l.startsWith('ru')) return \`Трейлер \${mainTitle}\`;
-  if (l.startsWith('tr')) return \`\${mainTitle} fragmanı\`;
-  if (l.startsWith('pl')) return \`Zwiastun \${mainTitle}\`;
-  if (l.startsWith('zh')) return \`\${mainTitle} 预告片\`;
-  if (l.startsWith('ja')) return \`\${mainTitle} の予告編\`;
-  return \`Trailer for \${mainTitle}\`;
+  if (l.startsWith('es')) return `Tráiler de ${mainTitle}`;
+  if (l.startsWith('pt')) return `Trailer de ${mainTitle}`;
+  if (l.startsWith('fr')) return `Bande-annonce de ${mainTitle}`;
+  if (l.startsWith('de')) return `Trailer zu ${mainTitle}`;
+  if (l.startsWith('it')) return `Trailer di ${mainTitle}`;
+  if (l.startsWith('ru')) return `Трейлер ${mainTitle}`;
+  if (l.startsWith('tr')) return `${mainTitle} fragmanı`;
+  if (l.startsWith('pl')) return `Zwiastun ${mainTitle}`;
+  if (l.startsWith('zh')) return `${mainTitle} 预告片`;
+  if (l.startsWith('ja')) return `${mainTitle} の予告編`;
+  return `Trailer for ${mainTitle}`;
 }
 
 // Título making of: "Cómo se hizo X" según idioma
 function getMakingTitle(lang, mainTitle) {
   const l = (lang || 'en-US').toLowerCase();
   if (!mainTitle) return '';
-  if (l.startsWith('es')) return \`Cómo se hizo \${mainTitle}\`;
-  if (l.startsWith('pt')) return \`Como foi feito \${mainTitle}\`;
-  if (l.startsWith('fr')) return \`Making of de \${mainTitle}\`;
-  if (l.startsWith('de')) return \`Making-of von \${mainTitle}\`;
-  if (l.startsWith('it')) return \`Come è stato fatto \${mainTitle}\`;
-  if (l.startsWith('ru')) return \`Как снимали \${mainTitle}\`;
-  if (l.startsWith('tr')) return \`\${mainTitle} nasıl yapıldı\`;
-  if (l.startsWith('pl')) return \`Jak powstał \${mainTitle}\`;
-  if (l.startsWith('zh')) return \`\${mainTitle} 幕后制作\`;
-  if (l.startsWith('ja')) return \`\${mainTitle} のメイキング\`;
-  return \`Making of \${mainTitle}\`;
+  if (l.startsWith('es')) return `Cómo se hizo ${mainTitle}`;
+  if (l.startsWith('pt')) return `Como foi feito ${mainTitle}`;
+  if (l.startsWith('fr')) return `Making of de ${mainTitle}`;
+  if (l.startsWith('de')) return `Making-of von ${mainTitle}`;
+  if (l.startsWith('it')) return `Come è stato fatto ${mainTitle}`;
+  if (l.startsWith('ru')) return `Как снимали ${mainTitle}`;
+  if (l.startsWith('tr')) return `${mainTitle} nasıl yapıldı`;
+  if (l.startsWith('pl')) return `Jak powstał ${mainTitle}`;
+  if (l.startsWith('zh')) return `${mainTitle} 幕后制作`;
+  if (l.startsWith('ja')) return `${mainTitle} のメイキング`;
+  return `Making of ${mainTitle}`;
 }
 
 // Título explicación: "Explicación del final de X" según idioma
 function getEndingTitle(lang, mainTitle) {
   const l = (lang || 'en-US').toLowerCase();
   if (!mainTitle) return '';
-  if (l.startsWith('es')) return \`Explicación del final de \${mainTitle}\`;
-  if (l.startsWith('pt')) return \`Explicação do final de \${mainTitle}\`;
-  if (l.startsWith('fr')) return \`Explication de la fin de \${mainTitle}\`;
-  if (l.startsWith('de')) return \`Erklärung des Endes von \${mainTitle}\`;
-  if (l.startsWith('it')) return \`Spiegazione del finale di \${mainTitle}\`;
-  if (l.startsWith('ru')) return \`Объяснение концовки \${mainTitle}\`;
-  if (l.startsWith('tr')) return \`\${mainTitle} finalinin açıklaması\`;
-  if (l.startsWith('pl')) return \`Wyjaśnienie zakończenia \${mainTitle}\`;
-  if (l.startsWith('zh')) return \`\${mainTitle} 结局解析\`;
-  if (l.startsWith('ja')) return \`\${mainTitle} の結末解説\`;
-  return \`Ending explained for \${mainTitle}\`;
+  if (l.startsWith('es')) return `Explicación del final de ${mainTitle}`;
+  if (l.startsWith('pt')) return `Explicação do final de ${mainTitle}`;
+  if (l.startsWith('fr')) return `Explication de la fin de ${mainTitle}`;
+  if (l.startsWith('de')) return `Erklärung des Endes von ${mainTitle}`;
+  if (l.startsWith('it')) return `Spiegazione del finale di ${mainTitle}`;
+  if (l.startsWith('ru')) return `Объяснение концовки ${mainTitle}`;
+  if (l.startsWith('tr')) return `${mainTitle} finalinin açıklaması`;
+  if (l.startsWith('pl')) return `Wyjaśnienie zakończenia ${mainTitle}`;
+  if (l.startsWith('zh')) return `${mainTitle} 结局解析`;
+  if (l.startsWith('ja')) return `${mainTitle} の結末解説`;
+  return `Ending explained for ${mainTitle}`;
 }
 
 // --------- TMDb: tráiler principal ---------
@@ -656,10 +656,10 @@ async function getTrailerFromTmdb({ imdbId, type, tmdbKey, lang }) {
   const cleanId = imdbId.split(':')[0];
 
   const findUrl =
-    \`https://api.themoviedb.org/3/find/\${encodeURIComponent(cleanId)}\` +
-    \`?api_key=\${encodeURIComponent(tmdbKey)}\` +
-    \`&language=\${encodeURIComponent(language)}\` +
-    \`&external_source=imdb_id\`;
+    `https://api.themoviedb.org/3/find/${encodeURIComponent(cleanId)}` +
+    `?api_key=${encodeURIComponent(tmdbKey)}` +
+    `&language=${encodeURIComponent(language)}` +
+    `&external_source=imdb_id`;
 
   const findRes = await fetch(findUrl);
   if (!findRes.ok) throw new Error('TMDb find error');
@@ -685,9 +685,9 @@ async function getTrailerFromTmdb({ imdbId, type, tmdbKey, lang }) {
 
   const kind = type === 'series' ? 'tv' : 'movie';
   const videosUrl =
-    \`https://api.themoviedb.org/3/\${kind}/\${tmdbId}/videos\` +
-    \`?api_key=\${encodeURIComponent(tmdbKey)}\` +
-    \`&language=\${encodeURIComponent(language)}\`;
+    `https://api.themoviedb.org/3/${kind}/${tmdbId}/videos` +
+    `?api_key=${encodeURIComponent(tmdbKey)}` +
+    `&language=${encodeURIComponent(language)}`;
 
   const videosRes = await fetch(videosUrl);
   if (!videosRes.ok) throw new Error('TMDb videos error');
@@ -704,7 +704,7 @@ async function getTrailerFromTmdb({ imdbId, type, tmdbKey, lang }) {
 
   if (!trailer || trailer.site !== 'YouTube' || !trailer.key) return null;
 
-  const youtubeUrl = \`https://www.youtube.com/watch?v=\${trailer.key}\`;
+  const youtubeUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
 
   return {
     url: youtubeUrl,
@@ -725,27 +725,27 @@ async function searchBestYoutubeVideo({ title, year, lang, serpKey, kind }) {
   let querySuffix;
   if (kind === 'ending') {
     if (hl === 'es') {
-      querySuffix = year ? \`\${year} final explicado\` : \`final explicado\`;
+      querySuffix = year ? `${year} final explicado` : `final explicado`;
     } else {
-      querySuffix = year ? \`\${year} ending explained\` : \`ending explained\`;
+      querySuffix = year ? `${year} ending explained` : `ending explained`;
     }
   } else {
     if (hl === 'es') {
-      querySuffix = year ? \`\${year} making of pelicula\` : \`making of pelicula\`;
+      querySuffix = year ? `${year} making of pelicula` : `making of pelicula`;
     } else {
-      querySuffix = year ? \`\${year} making of movie\` : \`making of movie\`;
+      querySuffix = year ? `${year} making of movie` : `making of movie`;
     }
   }
 
-  const searchQuery = \`\${title} \${querySuffix}\`;
+  const searchQuery = `${title} ${querySuffix}`;
 
   const url =
-    \`https://serpapi.com/search?engine=youtube\` +
-    \`&search_query=\${encodeURIComponent(searchQuery)}\` +
-    \`&api_key=\${encodeURIComponent(serpKey)}\` +
-    \`&num=10\` +
-    \`&hl=\${encodeURIComponent(hl)}\` +
-    \`&gl=\${encodeURIComponent(gl)}\`;
+    `https://serpapi.com/search?engine=youtube` +
+    `&search_query=${encodeURIComponent(searchQuery)}` +
+    `&api_key=${encodeURIComponent(serpKey)}` +
+    `&num=10` +
+    `&hl=${encodeURIComponent(hl)}` +
+    `&gl=${encodeURIComponent(gl)}`;
 
   const res = await fetch(url);
   if (!res.ok) return null;
@@ -838,7 +838,7 @@ app.get('/stream/:type/:id.json', async (req, res) => {
     }
 
     const { url, name, year } = baseData;
-    const mainTitle = name ? \`\${name}\${year ? ' (' + year + ')' : ''}\` : '';
+    const mainTitle = name ? `${name}${year ? ' (' + year + ')' : ''}` : '';
 
     const streams = [];
 
