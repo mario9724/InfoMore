@@ -1,13 +1,13 @@
 {
   "name": "trailio-addon",
   "version": "1.0.0",
-  "description": "Addon de Stremio con configuración por clave TMDb",
+  "description": "Addon de Stremio para buscar trailers en TMDb con clave por usuario",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.19.0",
-    "node-fetch": "^3.3.2"
+    "node-fetch": "^2.6.7"
   }
 }
