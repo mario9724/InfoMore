@@ -9,7 +9,7 @@ const manifest = {
   id: "trailio-addon",
   version: "1.0.0",
   name: "Trailio",
-  description: "Addon de Stremio con configuración por clave TMDb",
+  description: "Addon de Stremio para buscar trailers en TMDb con clave por usuario",
   types: ["movie", "series"],
   catalogs: [],
   resources: ["stream"],
@@ -74,7 +74,9 @@ app.get('/configure', (req, res) => {
           const url = base + '/manifest.json?' + params.toString();
           const out = document.getElementById('output');
           out.style.display = 'block';
-          out.textContent = url + '\\n\\nCopia esta URL y pégala en Stremio → Add-ons → Add-on URL.';
+          out.textContent =
+            url +
+            '\\n\\nCopia esta URL y pégala en Stremio → Add-ons → Add-on URL.';
         });
       </script>
     </body>
@@ -96,9 +98,63 @@ app.get('/manifest.json', (req, res) => {
   });
 });
 
-// /stream usando la clave TMDb
+// Función auxiliar: obtener tráiler de TMDb para un IMDb id
+async function getTrailerFromTmdb({ imdbId, type, tmdbKey, lang }) {
+  const language = lang || 'en-US';
+
+  // 1) Buscar el título en TMDb a partir del IMDb ID
+  const findUrl = `https://api.themoviedb.org/3/find/${encodeURIComponent(
+    imdbId
+  )}?api_key=${encodeURIComponent(tmdbKey)}&language=${encodeURIComponent(
+    language
+  )}&external_source=imdb_id`;
+
+  const findRes = await fetch(findUrl);
+  if (!findRes.ok) throw new Error('TMDb find error');
+  const findJson = await findRes.json();
+
+  let tmdbId = null;
+  if (type === 'movie' && findJson.movie_results && findJson.movie_results.length) {
+    tmdbId = findJson.movie_results[0].id;
+  } else if (type === 'series' && findJson.tv_results && findJson.tv_results.length) {
+    tmdbId = findJson.tv_results[0].id;
+  }
+
+  if (!tmdbId) return null;
+
+  // 2) Obtener vídeos (trailers) del título encontrado
+  const kind = type === 'series' ? 'tv' : 'movie';
+  const videosUrl = `https://api.themoviedb.org/3/${kind}/${tmdbId}/videos?api_key=${encodeURIComponent(
+    tmdbKey
+  )}&language=${encodeURIComponent(language)}`;
+
+  const videosRes = await fetch(videosUrl);
+  if (!videosRes.ok) throw new Error('TMDb videos error');
+  const videosJson = await videosRes.json();
+
+  if (!videosJson.results || !videosJson.results.length) return null;
+
+  // Priorizar trailers de YouTube
+  const trailer =
+    videosJson.results.find(
+      v =>
+        v.site === 'YouTube' &&
+        (v.type === 'Trailer' || v.type === 'Teaser')
+    ) || videosJson.results[0];
+
+  if (!trailer || trailer.site !== 'YouTube' || !trailer.key) return null;
+
+  const youtubeUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
+
+  return {
+    title: trailer.name || 'Trailer',
+    externalUrl: youtubeUrl
+  };
+}
+
+// /stream usando la clave TMDb y devolviendo el tráiler
 app.get('/stream/:type/:id.json', async (req, res) => {
-  const { type, id } = req.params;
+  const { type, id } = req.params; // type: movie|series, id: tt1234567
   const { tmdbKey, lang } = req.query;
 
   if (!tmdbKey) {
@@ -106,22 +162,33 @@ app.get('/stream/:type/:id.json', async (req, res) => {
   }
 
   try {
-    // Aquí pones tu lógica real con TMDb.
-    // Ejemplo muy simple sin llamar a TMDb:
+    const trailer = await getTrailerFromTmdb({
+      imdbId: id,
+      type,
+      tmdbKey,
+      lang
+    });
+
+    if (!trailer) {
+      return res.json({ streams: [] });
+    }
+
+    // Devolvemos un stream que abre el tráiler en YouTube
     res.json({
       streams: [
         {
-          title: "Ejemplo Trailio (usa tu TMDb key)",
-          url: "https://example.com/video.mp4"
+          title: trailer.title,
+          externalUrl: trailer.externalUrl
         }
       ]
     });
   } catch (e) {
-    console.error(e);
+    console.error('Error TMDb', e);
     res.json({ streams: [] });
   }
 });
 
+// Raíz
 app.get('/', (req, res) => {
   res.send('Trailio addon funcionando. Usa /manifest.json o /configure.');
 });
