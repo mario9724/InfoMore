@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 // Manifest base
 const manifest = {
   id: "infoplus-addon",
-  version: "1.0.0",
+  version: "1.1.0",
   name: "Info+",
   description: "Addon de Stremio que añade tráiler, making of y explicación del final desde YouTube usando TMDb y SerpAPI",
   types: ["movie", "series"],
@@ -20,13 +20,15 @@ const manifest = {
   }
 };
 
-// Página de configuración
+// Página de configuración con i18n simple (EN/ES) y versión visible
 app.get('/configure', (req, res) => {
+  const version = manifest.version;
+
   res.send(`<!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Configurar Info+</title>
+  <title>Configure Info+</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     :root {
@@ -54,7 +56,7 @@ app.get('/configure', (req, res) => {
     }
     .card {
       width: 100%;
-      max-width: 520px;
+      max-width: 540px;
       background: radial-gradient(circle at top left, rgba(139,92,246,0.09), transparent 55%),
                   linear-gradient(145deg, #020617, #030712);
       border-radius: 18px;
@@ -81,12 +83,22 @@ app.get('/configure', (req, res) => {
       z-index: 1;
     }
 
+    .top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .logo-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
     .logo-row {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-bottom: 16px;
+      gap: 8px;
     }
     .logo-word {
       font-weight: 800;
@@ -109,6 +121,14 @@ app.get('/configure', (req, res) => {
     .logo-word span:nth-child(3) {
       color: #e5e7eb;
     }
+    .version-pill {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+      color: var(--muted);
+      background: rgba(15,23,42,0.9);
+    }
     .logo-chip {
       font-size: 11px;
       text-transform: uppercase;
@@ -118,6 +138,26 @@ app.get('/configure', (req, res) => {
       border: 1px solid rgba(148,163,184,0.5);
       color: var(--muted);
       background: rgba(15,23,42,0.9);
+    }
+
+    .ui-lang-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .ui-lang-label {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .ui-lang-select {
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,0.95);
+      color: var(--text);
+      padding: 4px 10px;
+      font-size: 12px;
+      outline: none;
     }
 
     h1 {
@@ -268,10 +308,13 @@ app.get('/configure', (req, res) => {
     @media (max-width: 480px) {
       .card { padding: 18px 16px 16px; }
       h1 { font-size: 17px; }
-      .logo-row {
+      .top-row {
         flex-direction: column;
         align-items: flex-start;
-        gap: 6px;
+        gap: 8px;
+      }
+      .ui-lang-block {
+        align-items: flex-start;
       }
     }
   </style>
@@ -279,56 +322,68 @@ app.get('/configure', (req, res) => {
 <body>
   <div class="card">
     <div class="card-inner">
-      <div class="logo-row">
-        <div class="logo-word" aria-label="Info+">
-          <span>I</span><span>N</span><span>F</span><span>O</span><span>+</span>
+      <div class="top-row">
+        <div class="logo-block">
+          <div class="logo-row">
+            <div class="logo-word" aria-label="Info+">
+              <span>I</span><span>N</span><span>F</span><span>O</span><span>+</span>
+            </div>
+            <div class="version-pill" id="version-pill">v${version}</div>
+          </div>
+          <div class="logo-chip" id="logo-chip">Stremio add-on</div>
         </div>
-        <div class="logo-chip">Stremio add-on</div>
+        <div class="ui-lang-block">
+          <span class="ui-lang-label" id="ui-lang-label">Page language</span>
+          <select id="uiLang" class="ui-lang-select">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
       </div>
 
-      <h1>Configura Info+</h1>
-      <p class="subtitle">
-        Elige tu idioma y añade tus claves para TMDb y SerpAPI (YouTube).
+      <h1 id="title">Configure Info+</h1>
+      <p class="subtitle" id="subtitle">
+        Choose your language and add your keys for TMDb and SerpAPI (YouTube).
       </p>
 
       <form onsubmit="return false;">
         <div class="field">
-          <label for="tmdbKey">Clave TMDb (obligatoria)</label>
+          <label for="tmdbKey" id="tmdb-label">TMDb key (required)</label>
           <input
             id="tmdbKey"
             type="text"
             autocomplete="off"
-            placeholder="Tu api_key de TMDb"
+            placeholder="Your TMDb api_key"
           />
-          <div class="hint">
-            ¿Aún no tienes clave?
+          <div class="hint" id="tmdb-hint">
+            Don't have a key yet?
             <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">
-              Abre la página de API de TMDb
+              Open TMDb API page
             </a>
-            e inicia sesión para crear tu API key.
+            and log in to create your API key.
           </div>
         </div>
 
         <div class="field">
-          <label for="serpKey">Clave SerpAPI para YouTube (opcional)</label>
+          <label for="serpKey" id="serp-label">SerpAPI key for YouTube (optional)</label>
           <input
             id="serpKey"
             type="text"
             autocomplete="off"
-            placeholder="Solo si quieres making of y explicación del final"
+            placeholder="Only if you want making of & ending explained videos"
           />
-          <div class="hint">
-            Se usa para buscar vídeos extra en YouTube. Puedes obtenerla en
+          <div class="hint" id="serp-hint">
+            Used to search extra videos on YouTube. Get it from
             <a href="https://serpapi.com/manage-api-key" target="_blank" rel="noopener noreferrer">
-              tu panel de SerpAPI
+              your SerpAPI dashboard
             </a>.
           </div>
         </div>
 
         <div class="field">
-          <label for="lang">Idioma preferido</label>
+          <label for="lang" id="streams-lang-label">Preferred language for videos</label>
           <select id="lang">
-            <option value="">Por defecto (en-US)</option>
+            <option value="">Default (en-US)</option>
             <option value="es-ES">Español (es-ES)</option>
             <option value="en-US">English (en-US)</option>
             <option value="pt-BR">Português (pt-BR)</option>
@@ -341,39 +396,120 @@ app.get('/configure', (req, res) => {
             <option value="zh-CN">中文 (zh-CN)</option>
             <option value="ja-JP">日本語 (ja-JP)</option>
           </select>
-          <div class="hint">
-            Se usa para el texto de los streams y para priorizar el idioma de los vídeos extra.
+          <div class="hint" id="streams-lang-hint">
+            Used to choose trailer language and to prioritize the language of the extra videos.
           </div>
         </div>
 
         <div class="button-row">
           <button class="btn btn-primary" id="generate">
             <span class="button-icon">⚡️</span>
-            <span>Generar URL de Info+</span>
+            <span id="generate-text">Generate Info+ URL</span>
           </button>
-          <span class="button-note">
-            Copia o instala la URL directamente en Stremio.
+          <span class="button-note" id="button-note">
+            Copy or install the URL directly in Stremio.
           </span>
         </div>
       </form>
 
       <div id="output" class="output">
-        <strong>URL de instalación generada:</strong>
+        <strong id="output-title">Generated install URL:</strong>
         <div id="outputUrl" class="output-url"></div>
       </div>
 
       <div class="footer-row">
-        <div class="footer-hint">
-          El botón intenta abrir la app de Stremio automáticamente.
+        <div class="footer-hint" id="footer-hint">
+          The button will try to open the Stremio app automatically.
         </div>
         <button class="btn btn-secondary" id="installBtn" disabled>
-          <span>Instalar Info+ en Stremio</span>
+          <span id="install-text">Install Info+ in Stremio</span>
         </button>
       </div>
     </div>
   </div>
 
   <script>
+    const i18n = {
+      en: {
+        uiLangLabel: "Page language",
+        logoChip: "Stremio add-on",
+        title: "Configure Info+",
+        subtitle: "Choose your language and add your keys for TMDb and SerpAPI (YouTube).",
+        tmdbLabel: "TMDb key (required)",
+        tmdbPlaceholder: "Your TMDb api_key",
+        tmdbHint: "Don't have a key yet? <a href=\\"https://www.themoviedb.org/settings/api\\" target=\\"_blank\\" rel=\\"noopener noreferrer\\">Open TMDb API page</a> and log in to create your API key.",
+        serpLabel: "SerpAPI key for YouTube (optional)",
+        serpPlaceholder: "Only if you want making of & ending explained videos",
+        serpHint: "Used to search extra videos on YouTube. Get it from <a href=\\"https://serpapi.com/manage-api-key\\" target=\\"_blank\\" rel=\\"noopener noreferrer\\">your SerpAPI dashboard</a>.",
+        streamsLangLabel: "Preferred language for videos",
+        streamsLangHint: "Used to choose trailer language and to prioritize the language of the extra videos.",
+        generateText: "Generate Info+ URL",
+        buttonNote: "Copy or install the URL directly in Stremio.",
+        outputTitle: "Generated install URL:",
+        footerHint: "The button will try to open the Stremio app automatically.",
+        installText: "Install Info+ in Stremio",
+        tmdbRequiredAlert: "Please enter your TMDb key (required)."
+      },
+      es: {
+        uiLangLabel: "Idioma de la página",
+        logoChip: "Complemento de Stremio",
+        title: "Configura Info+",
+        subtitle: "Elige tu idioma y añade tus claves para TMDb y SerpAPI (YouTube).",
+        tmdbLabel: "Clave TMDb (obligatoria)",
+        tmdbPlaceholder: "Tu api_key de TMDb",
+        tmdbHint: "¿Aún no tienes clave? <a href=\\"https://www.themoviedb.org/settings/api\\" target=\\"_blank\\" rel=\\"noopener noreferrer\\">Abre la página de API de TMDb</a> e inicia sesión para crear tu API key.",
+        serpLabel: "Clave SerpAPI para YouTube (opcional)",
+        serpPlaceholder: "Solo si quieres making of y explicación del final",
+        serpHint: "Se usa para buscar vídeos extra en YouTube. Puedes obtenerla en <a href=\\"https://serpapi.com/manage-api-key\\" target=\\"_blank\\" rel=\\"noopener noreferrer\\">tu panel de SerpAPI</a>.",
+        streamsLangLabel: "Idioma preferido para los vídeos",
+        streamsLangHint: "Se usa para elegir el idioma del tráiler y priorizar el idioma de los vídeos extra.",
+        generateText: "Generar URL de Info+",
+        buttonNote: "Copia o instala la URL directamente en Stremio.",
+        outputTitle: "URL de instalación generada:",
+        footerHint: "El botón intentará abrir la app de Stremio automáticamente.",
+        installText: "Instalar Info+ en Stremio",
+        tmdbRequiredAlert: "Por favor, introduce tu clave TMDb (obligatoria)."
+      }
+    };
+
+    const uiLangSelect = document.getElementById('uiLang');
+
+    function applyTranslations(lang) {
+      const dict = i18n[lang] || i18n.en;
+
+      document.getElementById('ui-lang-label').textContent = dict.uiLangLabel;
+      document.getElementById('logo-chip').textContent = dict.logoChip;
+      document.getElementById('title').textContent = dict.title;
+      document.getElementById('subtitle').textContent = dict.subtitle;
+
+      document.getElementById('tmdb-label').textContent = dict.tmdbLabel;
+      document.getElementById('tmdbKey').placeholder = dict.tmdbPlaceholder;
+      document.getElementById('tmdb-hint').innerHTML = dict.tmdbHint;
+
+      document.getElementById('serp-label').textContent = dict.serpLabel;
+      document.getElementById('serpKey').placeholder = dict.serpPlaceholder;
+      document.getElementById('serp-hint').innerHTML = dict.serpHint;
+
+      document.getElementById('streams-lang-label').textContent = dict.streamsLangLabel;
+      document.getElementById('streams-lang-hint').textContent = dict.streamsLangHint;
+
+      document.getElementById('generate-text').textContent = dict.generateText;
+      document.getElementById('button-note').textContent = dict.buttonNote;
+      document.getElementById('output-title').textContent = dict.outputTitle;
+      document.getElementById('footer-hint').textContent = dict.footerHint;
+      document.getElementById('install-text').textContent = dict.installText;
+
+      window._tmdbRequiredAlert = dict.tmdbRequiredAlert;
+    }
+
+    // idioma de UI por defecto: inglés
+    applyTranslations('en');
+
+    uiLangSelect.addEventListener('change', () => {
+      const lang = uiLangSelect.value || 'en';
+      applyTranslations(lang);
+    });
+
     const generateBtn = document.getElementById('generate');
     const installBtn = document.getElementById('installBtn');
     const output = document.getElementById('output');
@@ -386,7 +522,7 @@ app.get('/configure', (req, res) => {
       const serpKey = document.getElementById('serpKey').value.trim();
       const lang = document.getElementById('lang').value;
       if (!tmdbKey) {
-        alert('Por favor, introduce tu clave TMDb (obligatoria).');
+        alert(window._tmdbRequiredAlert || 'Please enter your TMDb key (required).');
         return;
       }
       const base = window.location.origin;
@@ -431,7 +567,7 @@ app.get('/manifest.json', (req, res) => {
   });
 });
 
-// --------- Helpers de idioma ---------
+// --------- Helpers de idioma para streams ---------
 function getLangWord(lang) {
   const l = (lang || 'en-US').toLowerCase();
   if (l.startsWith('es')) return 'español';
@@ -466,51 +602,51 @@ function getRegionFromLang(lang) {
 function getTrailerTitle(lang, mainTitle) {
   const l = (lang || 'en-US').toLowerCase();
   if (!mainTitle) return '';
-  if (l.startsWith('es')) return `Tráiler de ${mainTitle}`;
-  if (l.startsWith('pt')) return `Trailer de ${mainTitle}`;
-  if (l.startsWith('fr')) return `Bande-annonce de ${mainTitle}`;
-  if (l.startsWith('de')) return `Trailer zu ${mainTitle}`;
-  if (l.startsWith('it')) return `Trailer di ${mainTitle}`;
-  if (l.startsWith('ru')) return `Трейлер ${mainTitle}`;
-  if (l.startsWith('tr')) return `${mainTitle} fragmanı`;
-  if (l.startsWith('pl')) return `Zwiastun ${mainTitle}`;
-  if (l.startsWith('zh')) return `${mainTitle} 预告片`;
-  if (l.startsWith('ja')) return `${mainTitle} の予告編`;
-  return `Trailer for ${mainTitle}`;
+  if (l.startsWith('es')) return \`Tráiler de \${mainTitle}\`;
+  if (l.startsWith('pt')) return \`Trailer de \${mainTitle}\`;
+  if (l.startsWith('fr')) return \`Bande-annonce de \${mainTitle}\`;
+  if (l.startsWith('de')) return \`Trailer zu \${mainTitle}\`;
+  if (l.startsWith('it')) return \`Trailer di \${mainTitle}\`;
+  if (l.startsWith('ru')) return \`Трейлер \${mainTitle}\`;
+  if (l.startsWith('tr')) return \`\${mainTitle} fragmanı\`;
+  if (l.startsWith('pl')) return \`Zwiastun \${mainTitle}\`;
+  if (l.startsWith('zh')) return \`\${mainTitle} 预告片\`;
+  if (l.startsWith('ja')) return \`\${mainTitle} の予告編\`;
+  return \`Trailer for \${mainTitle}\`;
 }
 
 // Título making of: "Cómo se hizo X" según idioma
 function getMakingTitle(lang, mainTitle) {
   const l = (lang || 'en-US').toLowerCase();
   if (!mainTitle) return '';
-  if (l.startsWith('es')) return `Cómo se hizo ${mainTitle}`;
-  if (l.startsWith('pt')) return `Como foi feito ${mainTitle}`;
-  if (l.startsWith('fr')) return `Making of de ${mainTitle}`;
-  if (l.startsWith('de')) return `Making-of von ${mainTitle}`;
-  if (l.startsWith('it')) return `Come è stato fatto ${mainTitle}`;
-  if (l.startsWith('ru')) return `Как снимали ${mainTitle}`;
-  if (l.startsWith('tr')) return `${mainTitle} nasıl yapıldı`;
-  if (l.startsWith('pl')) return `Jak powstał ${mainTitle}`;
-  if (l.startsWith('zh')) return `${mainTitle} 幕后制作`;
-  if (l.startsWith('ja')) return `${mainTitle} のメイキング`;
-  return `Making of ${mainTitle}`;
+  if (l.startsWith('es')) return \`Cómo se hizo \${mainTitle}\`;
+  if (l.startsWith('pt')) return \`Como foi feito \${mainTitle}\`;
+  if (l.startsWith('fr')) return \`Making of de \${mainTitle}\`;
+  if (l.startsWith('de')) return \`Making-of von \${mainTitle}\`;
+  if (l.startsWith('it')) return \`Come è stato fatto \${mainTitle}\`;
+  if (l.startsWith('ru')) return \`Как снимали \${mainTitle}\`;
+  if (l.startsWith('tr')) return \`\${mainTitle} nasıl yapıldı\`;
+  if (l.startsWith('pl')) return \`Jak powstał \${mainTitle}\`;
+  if (l.startsWith('zh')) return \`\${mainTitle} 幕后制作\`;
+  if (l.startsWith('ja')) return \`\${mainTitle} のメイキング\`;
+  return \`Making of \${mainTitle}\`;
 }
 
 // Título explicación: "Explicación del final de X" según idioma
 function getEndingTitle(lang, mainTitle) {
   const l = (lang || 'en-US').toLowerCase();
   if (!mainTitle) return '';
-  if (l.startsWith('es')) return `Explicación del final de ${mainTitle}`;
-  if (l.startsWith('pt')) return `Explicação do final de ${mainTitle}`;
-  if (l.startsWith('fr')) return `Explication de la fin de ${mainTitle}`;
-  if (l.startsWith('de')) return `Erklärung des Endes von ${mainTitle}`;
-  if (l.startsWith('it')) return `Spiegazione del finale di ${mainTitle}`;
-  if (l.startsWith('ru')) return `Объяснение концовки ${mainTitle}`;
-  if (l.startsWith('tr')) return `${mainTitle} finalinin açıklaması`;
-  if (l.startsWith('pl')) return `Wyjaśnienie zakończenia ${mainTitle}`;
-  if (l.startsWith('zh')) return `${mainTitle} 结局解析`;
-  if (l.startsWith('ja')) return `${mainTitle} の結末解説`;
-  return `Ending explained for ${mainTitle}`;
+  if (l.startsWith('es')) return \`Explicación del final de \${mainTitle}\`;
+  if (l.startsWith('pt')) return \`Explicação do final de \${mainTitle}\`;
+  if (l.startsWith('fr')) return \`Explication de la fin de \${mainTitle}\`;
+  if (l.startsWith('de')) return \`Erklärung des Endes von \${mainTitle}\`;
+  if (l.startsWith('it')) return \`Spiegazione del finale di \${mainTitle}\`;
+  if (l.startsWith('ru')) return \`Объяснение концовки \${mainTitle}\`;
+  if (l.startsWith('tr')) return \`\${mainTitle} finalinin açıklaması\`;
+  if (l.startsWith('pl')) return \`Wyjaśnienie zakończenia \${mainTitle}\`;
+  if (l.startsWith('zh')) return \`\${mainTitle} 结局解析\`;
+  if (l.startsWith('ja')) return \`\${mainTitle} の結末解説\`;
+  return \`Ending explained for \${mainTitle}\`;
 }
 
 // --------- TMDb: tráiler principal ---------
@@ -520,10 +656,10 @@ async function getTrailerFromTmdb({ imdbId, type, tmdbKey, lang }) {
   const cleanId = imdbId.split(':')[0];
 
   const findUrl =
-    `https://api.themoviedb.org/3/find/${encodeURIComponent(cleanId)}` +
-    `?api_key=${encodeURIComponent(tmdbKey)}` +
-    `&language=${encodeURIComponent(language)}` +
-    `&external_source=imdb_id`;
+    \`https://api.themoviedb.org/3/find/\${encodeURIComponent(cleanId)}\` +
+    \`?api_key=\${encodeURIComponent(tmdbKey)}\` +
+    \`&language=\${encodeURIComponent(language)}\` +
+    \`&external_source=imdb_id\`;
 
   const findRes = await fetch(findUrl);
   if (!findRes.ok) throw new Error('TMDb find error');
@@ -549,9 +685,9 @@ async function getTrailerFromTmdb({ imdbId, type, tmdbKey, lang }) {
 
   const kind = type === 'series' ? 'tv' : 'movie';
   const videosUrl =
-    `https://api.themoviedb.org/3/${kind}/${tmdbId}/videos` +
-    `?api_key=${encodeURIComponent(tmdbKey)}` +
-    `&language=${encodeURIComponent(language)}`;
+    \`https://api.themoviedb.org/3/\${kind}/\${tmdbId}/videos\` +
+    \`?api_key=\${encodeURIComponent(tmdbKey)}\` +
+    \`&language=\${encodeURIComponent(language)}\`;
 
   const videosRes = await fetch(videosUrl);
   if (!videosRes.ok) throw new Error('TMDb videos error');
@@ -568,7 +704,7 @@ async function getTrailerFromTmdb({ imdbId, type, tmdbKey, lang }) {
 
   if (!trailer || trailer.site !== 'YouTube' || !trailer.key) return null;
 
-  const youtubeUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
+  const youtubeUrl = \`https://www.youtube.com/watch?v=\${trailer.key}\`;
 
   return {
     url: youtubeUrl,
@@ -589,27 +725,27 @@ async function searchBestYoutubeVideo({ title, year, lang, serpKey, kind }) {
   let querySuffix;
   if (kind === 'ending') {
     if (hl === 'es') {
-      querySuffix = year ? `${year} final explicado` : `final explicado`;
+      querySuffix = year ? \`\${year} final explicado\` : \`final explicado\`;
     } else {
-      querySuffix = year ? `${year} ending explained` : `ending explained`;
+      querySuffix = year ? \`\${year} ending explained\` : \`ending explained\`;
     }
   } else {
     if (hl === 'es') {
-      querySuffix = year ? `${year} making of pelicula` : `making of pelicula`;
+      querySuffix = year ? \`\${year} making of pelicula\` : \`making of pelicula\`;
     } else {
-      querySuffix = year ? `${year} making of movie` : `making of movie`;
+      querySuffix = year ? \`\${year} making of movie\` : \`making of movie\`;
     }
   }
 
-  const searchQuery = `${title} ${querySuffix}`;
+  const searchQuery = \`\${title} \${querySuffix}\`;
 
   const url =
-    `https://serpapi.com/search?engine=youtube` +
-    `&search_query=${encodeURIComponent(searchQuery)}` +
-    `&api_key=${encodeURIComponent(serpKey)}` +
-    `&num=10` +
-    `&hl=${encodeURIComponent(hl)}` +
-    `&gl=${encodeURIComponent(gl)}`;
+    \`https://serpapi.com/search?engine=youtube\` +
+    \`&search_query=\${encodeURIComponent(searchQuery)}\` +
+    \`&api_key=\${encodeURIComponent(serpKey)}\` +
+    \`&num=10\` +
+    \`&hl=\${encodeURIComponent(hl)}\` +
+    \`&gl=\${encodeURIComponent(gl)}\`;
 
   const res = await fetch(url);
   if (!res.ok) return null;
@@ -702,7 +838,7 @@ app.get('/stream/:type/:id.json', async (req, res) => {
     }
 
     const { url, name, year } = baseData;
-    const mainTitle = name ? `${name}${year ? ' (' + year + ')' : ''}` : '';
+    const mainTitle = name ? \`\${name}\${year ? ' (' + year + ')' : ''}\` : '';
 
     const streams = [];
 
@@ -750,7 +886,7 @@ app.get('/stream/:type/:id.json', async (req, res) => {
 
 // Raíz
 app.get('/', (req, res) => {
-  res.send('Addon Info+ funcionando. Usa /manifest.json o /configure.');
+  res.send('Info+ addon running. Use /manifest.json or /configure.');
 });
 
 app.listen(PORT, () => {
