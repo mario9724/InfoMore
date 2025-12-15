@@ -7,9 +7,9 @@ const PORT = process.env.PORT || 3000;
 // Manifest base
 const manifest = {
   id: "trailio-addon",
-  version: "1.2.0",
+  version: "1.3.0",
   name: "Trailer",
-  description: "Addon de Stremio para buscar trailers y vídeos extra (YouTube) usando TMDb + SerpAPI",
+  description: "Addon de Stremio para tráiler + making of + explicación del final vía TMDb y SerpAPI (YouTube)",
   types: ["movie", "series"],
   catalogs: [],
   resources: ["stream"],
@@ -289,7 +289,7 @@ app.get('/configure', (req, res) => {
 
       <h1>Configura tus claves</h1>
       <p class="subtitle">
-        Las claves se usan solo para tus peticiones. Se codifican en la URL que instalas en Stremio.
+        Elige tu idioma y añade tus claves para TMDb y SerpAPI (YouTube).
       </p>
 
       <form onsubmit="return false;">
@@ -299,7 +299,7 @@ app.get('/configure', (req, res) => {
             id="tmdbKey"
             type="text"
             autocomplete="off"
-            placeholder="Ejemplo: 1234567890abcdef1234567890abcdef"
+            placeholder="Tu api_key de TMDb"
           />
           <div class="hint">
             ¿Aún no tienes clave?
@@ -316,11 +316,10 @@ app.get('/configure', (req, res) => {
             id="serpKey"
             type="text"
             autocomplete="off"
-            placeholder="Solo si quieres extras: ending explained, making of..."
+            placeholder="Solo si quieres making of y explicación del final"
           />
           <div class="hint">
-            Se usa para buscar vídeos extra en YouTube (explicación del final, making of, entrevistas).
-            Puedes obtenerla en
+            Se usa para buscar vídeos extra en YouTube. Puedes obtenerla en
             <a href="https://serpapi.com/manage-api-key" target="_blank" rel="noopener noreferrer">
               tu panel de SerpAPI
             </a>.
@@ -344,7 +343,7 @@ app.get('/configure', (req, res) => {
             <option value="ja-JP">日本語 (ja-JP)</option>
           </select>
           <div class="hint">
-            Se usa para priorizar el idioma del tráiler y de los vídeos extra.
+            Se usa para el texto de los streams y para priorizar el idioma de los vídeos extra.
           </div>
         </div>
 
@@ -354,7 +353,7 @@ app.get('/configure', (req, res) => {
             <span>Generar URL del add-on</span>
           </button>
           <span class="button-note">
-            Genera la URL de instalación personalizada con tus claves.
+            Copia o instala la URL directamente en Stremio.
           </span>
         </div>
       </form>
@@ -366,7 +365,7 @@ app.get('/configure', (req, res) => {
 
       <div class="footer-row">
         <div class="footer-hint">
-          Después de generar la URL puedes instalarla directamente en Stremio.
+          El botón intenta abrir la app de Stremio automáticamente.
         </div>
         <button class="btn btn-secondary" id="installBtn" disabled>
           <span>Instalar en Stremio</span>
@@ -433,7 +432,68 @@ app.get('/manifest.json', (req, res) => {
   });
 });
 
-// Función auxiliar: obtener datos y tráiler de TMDb para un IMDb id
+// --------- Helpers de idioma ---------
+function getLangWord(lang) {
+  const l = (lang || 'en-US').toLowerCase();
+  if (l.startsWith('es')) return 'español';
+  if (l.startsWith('pt')) return 'portuguese';
+  if (l.startsWith('fr')) return 'francais';
+  if (l.startsWith('de')) return 'german';
+  if (l.startsWith('it')) return 'italiano';
+  if (l.startsWith('ru')) return 'russian';
+  if (l.startsWith('tr')) return 'turkish';
+  if (l.startsWith('pl')) return 'polish';
+  if (l.startsWith('zh')) return 'chinese';
+  if (l.startsWith('ja')) return 'japanese';
+  return 'english';
+}
+
+function getTrailerPrefix(lang) {
+  const l = (lang || 'en-US').toLowerCase();
+  if (l.startsWith('es')) return 'Ver tráiler de';
+  if (l.startsWith('pt')) return 'Ver trailer de';
+  if (l.startsWith('fr')) return 'Voir la bande-annonce de';
+  if (l.startsWith('de')) return 'Trailer ansehen von';
+  if (l.startsWith('it')) return 'Guarda il trailer di';
+  if (l.startsWith('ru')) return 'Смотреть трейлер';
+  if (l.startsWith('tr')) return 'Fragmanı izle';
+  if (l.startsWith('pl')) return 'Zobacz zwiastun';
+  if (l.startsWith('zh')) return '观看预告片';
+  if (l.startsWith('ja')) return '予告編を見る';
+  return 'Play trailer for';
+}
+
+function getEndingTitleBase(lang) {
+  const l = (lang || 'en-US').toLowerCase();
+  if (l.startsWith('es')) return 'Explicación del final';
+  if (l.startsWith('pt')) return 'Final explicado';
+  if (l.startsWith('fr')) return 'Fin expliquée';
+  if (l.startsWith('de')) return 'Ende erklärt';
+  if (l.startsWith('it')) return 'Finale spiegato';
+  if (l.startsWith('ru')) return 'Объяснение концовки';
+  if (l.startsWith('tr')) return 'Finalin açıklaması';
+  if (l.startsWith('pl')) return 'Wyjaśnienie zakończenia';
+  if (l.startsWith('zh')) return '结局解析';
+  if (l.startsWith('ja')) return 'ラスト解説';
+  return 'Ending explained';
+}
+
+function getMakingTitleBase(lang) {
+  const l = (lang || 'en-US').toLowerCase();
+  if (l.startsWith('es')) return 'Making of / entrevistas';
+  if (l.startsWith('pt')) return 'Making of / entrevistas';
+  if (l.startsWith('fr')) return 'Making of / interviews';
+  if (l.startsWith('de')) return 'Making-of / Interviews';
+  if (l.startsWith('it')) return 'Dietro le quinte / interviste';
+  if (l.startsWith('ru')) return 'За кадром / интервью';
+  if (l.startsWith('tr')) return 'Kamera arkası / röportajlar';
+  if (l.startsWith('pl')) return 'Kulisy / wywiady';
+  if (l.startsWith('zh')) return '幕后花絮 / 访谈';
+  if (l.startsWith('ja')) return 'メイキング / インタビュー';
+  return 'Making of / interviews';
+}
+
+// --------- TMDb: tráiler principal ---------
 async function getTrailerFromTmdb({ imdbId, type, tmdbKey, lang }) {
   const language = lang || 'en-US';
 
@@ -497,75 +557,102 @@ async function getTrailerFromTmdb({ imdbId, type, tmdbKey, lang }) {
   };
 }
 
-// Función auxiliar: buscar extras en YouTube vía SerpAPI
-async function getYoutubeExtras({ title, lang, serpKey }) {
-  if (!serpKey || !title) return [];
+// --------- SerpAPI: un solo vídeo para cada extra ---------
+async function searchBestYoutubeVideo({ title, year, lang, serpKey, kind }) {
+  if (!serpKey || !title) return null;
 
-  // idioma preferido más simple para texto
-  const l = (lang || 'en-US').toLowerCase();
-  let langWord;
-  if (l.startsWith('es')) langWord = 'español';
-  else if (l.startsWith('pt')) langWord = 'portuguese';
-  else if (l.startsWith('fr')) langWord = 'francais';
-  else if (l.startsWith('de')) langWord = 'german';
-  else if (l.startsWith('it')) langWord = 'italiano';
-  else if (l.startsWith('ru')) langWord = 'russian';
-  else if (l.startsWith('tr')) langWord = 'turkish';
-  else if (l.startsWith('pl')) langWord = 'polish';
-  else if (l.startsWith('zh')) langWord = 'chinese';
-  else if (l.startsWith('ja')) langWord = 'japanese';
-  else langWord = 'english';
+  const langWord = getLangWord(lang);
 
-  const extras = [];
-
-  async function searchOnce(kind, querySuffix) {
-    const searchQuery = `${title} ${querySuffix}`;
-    const url =
-      `https://serpapi.com/search?engine=youtube` +
-      `&search_query=${encodeURIComponent(searchQuery)}` +
-      `&api_key=${encodeURIComponent(serpKey)}` +
-      `&num=5`;
-
-    const res = await fetch(url);
-    if (!res.ok) return;
-    const json = await res.json();
-
-    const items = (json.video_results || []).slice(0, 5);
-
-    // priorizar los que parezcan en el idioma preferido
-    const preferred = items.find(v => {
-      const t = (v.title || '').toLowerCase();
-      const d = (v.description || '').toLowerCase();
-      return t.includes(langWord) || d.includes(langWord);
-    }) || items[0];
-
-    if (!preferred || !preferred.link) return;
-
-    extras.push({
-      kind,
-      url: preferred.link
-    });
+  let querySuffix;
+  if (kind === 'ending') {
+    if (year) querySuffix = `${year} ending explained full movie`;
+    else querySuffix = `ending explained full movie`;
+  } else {
+    // making
+    if (year) querySuffix = `${year} making of movie`;
+    else querySuffix = `making of movie`;
   }
 
-  // Ending explained
-  await searchOnce('ending', 'ending explained');
-  // Making of / behind the scenes
-  await searchOnce('making', 'making of');
-  await searchOnce('making', 'behind the scenes');
+  const searchQuery = `${title} ${querySuffix}`;
+  const url =
+    `https://serpapi.com/search?engine=youtube` +
+    `&search_query=${encodeURIComponent(searchQuery)}` +
+    `&api_key=${encodeURIComponent(serpKey)}` +
+    `&num=10`;
 
-  // Deduplicar por URL
-  const seen = new Set();
-  const unique = [];
-  for (const ex of extras) {
-    if (seen.has(ex.url)) continue;
-    seen.add(ex.url);
-    unique.push(ex);
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const json = await res.json();
+
+  const items = (json.video_results || []).slice(0, 10);
+
+  if (!items.length) return null;
+
+  function parseDurationToSeconds(dur) {
+    if (!dur) return 0;
+    const parts = dur.split(':').map(Number).reverse();
+    let seconds = 0;
+    if (parts[0]) seconds += parts[0];
+    if (parts[1]) seconds += parts[1] * 60;
+    if (parts[2]) seconds += parts[2] * 3600;
+    return seconds;
   }
 
-  return unique;
+  const titleLower = title.toLowerCase();
+
+  function score(item) {
+    const t = (item.title || '').toLowerCase();
+    const d = (item.description || '').toLowerCase();
+    const duration = parseDurationToSeconds(item.rich_snippet && item.rich_snippet.top && item.rich_snippet.top.duration);
+
+    let s = 0;
+
+    // Debe contener parte del título
+    if (t.includes(titleLower)) s += 5;
+
+    // Palabras clave por tipo
+    if (kind === 'ending') {
+      if (t.includes('ending explained') || d.includes('ending explained')) s += 8;
+      if (t.includes('final explicado') || d.includes('final explicado')) s += 8;
+      if (duration >= 180) s += 3; // mínimo 3 minutos
+      if (duration < 60) s -= 4;   // evitar shorts
+    } else {
+      if (t.includes('making of') || d.includes('making of')) s += 6;
+      if (t.includes('behind the scenes') || d.includes('behind the scenes')) s += 6;
+      if (t.includes('interview') || d.includes('interview')) s += 3;
+      if (duration >= 120) s += 2;
+      if (duration < 45) s -= 3;
+    }
+
+    // Idioma aproximado
+    if (t.includes(langWord) || d.includes(langWord)) s += 4;
+
+    // Penalizar cosas tipo tráiler otra vez
+    if (t.includes('trailer') || d.includes('trailer')) s -= 5;
+
+    return s;
+  }
+
+  let best = null;
+  let bestScore = -Infinity;
+  for (const item of items) {
+    if (!item.link) continue;
+    const s = score(item);
+    if (s > bestScore) {
+      bestScore = s;
+      best = item;
+    }
+  }
+
+  if (!best || bestScore <= 0) return null; // si todo puntúa mal, mejor no devolver nada
+
+  return {
+    kind,
+    url: best.link
+  };
 }
 
-// /stream usando TMDb + SerpAPI, devolviendo externalUrl
+// /stream usando TMDb + SerpAPI, devolviendo solo 3 streams máximo
 app.get('/stream/:type/:id.json', async (req, res) => {
   const { type, id } = req.params;
   const { tmdbKey, lang, serpKey } = req.query;
@@ -587,34 +674,7 @@ app.get('/stream/:type/:id.json', async (req, res) => {
     }
 
     const { url, name, year } = baseData;
-
-    const l = (lang || 'en-US').toLowerCase();
-
-    let prefix;
-    if (l.startsWith('es')) {
-      prefix = 'Ver tráiler de';
-    } else if (l.startsWith('pt')) {
-      prefix = 'Ver trailer de';
-    } else if (l.startsWith('fr')) {
-      prefix = 'Voir la bande-annonce de';
-    } else if (l.startsWith('de')) {
-      prefix = 'Trailer ansehen von';
-    } else if (l.startsWith('it')) {
-      prefix = 'Guarda il trailer di';
-    } else if (l.startsWith('ru')) {
-      prefix = 'Смотреть трейлер';
-    } else if (l.startsWith('tr')) {
-      prefix = 'Fragmanı izle';
-    } else if (l.startsWith('pl')) {
-      prefix = 'Zobacz zwiastun';
-    } else if (l.startsWith('zh')) {
-      prefix = '观看预告片';
-    } else if (l.startsWith('ja')) {
-      prefix = '予告編を見る';
-    } else {
-      prefix = 'Play trailer for';
-    }
-
+    const prefix = getTrailerPrefix(lang);
     const mainTitle = name ? `${name}${year ? ' (' + year + ')' : ''}` : '';
     const streamTitle = mainTitle ? `${prefix} ${mainTitle}` : prefix;
 
@@ -625,57 +685,30 @@ app.get('/stream/:type/:id.json', async (req, res) => {
       }
     ];
 
-    // Extras vía SerpAPI (opcional)
-    if (serpKey) {
+    // Extras vía SerpAPI (opcionales, 1 para ending y 1 para making)
+    if (serpKey && name) {
       try {
-        const extras = await getYoutubeExtras({
-          title: name || '',
-          lang,
-          serpKey
-        });
+        const [ending, making] = await Promise.all([
+          searchBestYoutubeVideo({ title: name, year, lang, serpKey, kind: 'ending' }),
+          searchBestYoutubeVideo({ title: name, year, lang, serpKey, kind: 'making' })
+        ]);
 
-        for (const ex of extras) {
-          if (ex.kind === 'ending') {
-            let t;
-            if (l.startsWith('es')) t = 'Explicación del final';
-            else if (l.startsWith('pt')) t = 'Final explicado';
-            else if (l.startsWith('fr')) t = 'Fin expliquée';
-            else if (l.startsWith('de')) t = 'Ende erklärt';
-            else if (l.startsWith('it')) t = 'Finale spiegato';
-            else if (l.startsWith('ru')) t = 'Объяснение концовки';
-            else if (l.startsWith('tr')) t = 'Finalin açıklaması';
-            else if (l.startsWith('pl')) t = 'Wyjaśnienie zakończenia';
-            else if (l.startsWith('zh')) t = '结局解析';
-            else if (l.startsWith('ja')) t = 'ラスト解説';
-            else t = 'Ending explained';
+        if (ending && ending.url) {
+          const base = getEndingTitleBase(lang);
+          const full = mainTitle ? `${base} · ${mainTitle}` : base;
+          streams.push({
+            title: full,
+            externalUrl: ending.url
+          });
+        }
 
-            const fullTitle = mainTitle ? `${t} · ${mainTitle}` : t;
-
-            streams.push({
-              title: fullTitle,
-              externalUrl: ex.url
-            });
-          } else if (ex.kind === 'making') {
-            let t;
-            if (l.startsWith('es')) t = 'Making of / entrevistas';
-            else if (l.startsWith('pt')) t = 'Making of / entrevistas';
-            else if (l.startsWith('fr')) t = 'Making of / interviews';
-            else if (l.startsWith('de')) t = 'Making-of / Interviews';
-            else if (l.startsWith('it')) t = 'Dietro le quinte / interviste';
-            else if (l.startsWith('ru')) t = 'За кадром / интервью';
-            else if (l.startsWith('tr')) t = 'Kamera arkası / röportajlar';
-            else if (l.startsWith('pl')) t = 'Kulisy / wywiady';
-            else if (l.startsWith('zh')) t = '幕后花絮 / 访谈';
-            else if (l.startsWith('ja')) t = 'メイキング / インタビュー';
-            else t = 'Making of / interviews';
-
-            const fullTitle = mainTitle ? `${t} · ${mainTitle}` : t;
-
-            streams.push({
-              title: fullTitle,
-              externalUrl: ex.url
-            });
-          }
+        if (making && making.url) {
+          const base = getMakingTitleBase(lang);
+          const full = mainTitle ? `${base} · ${mainTitle}` : base;
+          streams.push({
+            title: full,
+            externalUrl: making.url
+          });
         }
       } catch (e) {
         console.error('Error extras SerpAPI', e);
