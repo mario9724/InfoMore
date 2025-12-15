@@ -1,14 +1,13 @@
 {
-  "name": "trailio",
+  "name": "trailio-addon",
   "version": "1.0.0",
-  "description": "Stremio addon for trailer search",
+  "description": "Addon de Stremio con configuración por clave TMDb",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "axios": "^1.7.7",
-    "cors": "^2.8.5",
-    "express": "^4.21.2"
+    "express": "^4.19.0",
+    "node-fetch": "^3.3.2"
   }
 }
