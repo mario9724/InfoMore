@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 // Manifest base
 const manifest = {
   id: "trailio-addon",
-  version: "1.3.0",
+  version: "1.3.1",
   name: "Trailer",
   description: "Addon de Stremio para tráiler + making of + explicación del final vía TMDb y SerpAPI (YouTube)",
   types: ["movie", "series"],
@@ -448,6 +448,21 @@ function getLangWord(lang) {
   return 'english';
 }
 
+function getRegionFromLang(lang) {
+  const l = (lang || '').toLowerCase();
+  if (l.startsWith('es')) return 'ES';
+  if (l.startsWith('pt')) return 'BR';
+  if (l.startsWith('fr')) return 'FR';
+  if (l.startsWith('de')) return 'DE';
+  if (l.startsWith('it')) return 'IT';
+  if (l.startsWith('ru')) return 'RU';
+  if (l.startsWith('tr')) return 'TR';
+  if (l.startsWith('pl')) return 'PL';
+  if (l.startsWith('zh')) return 'CN';
+  if (l.startsWith('ja')) return 'JP';
+  return 'US';
+}
+
 function getTrailerPrefix(lang) {
   const l = (lang || 'en-US').toLowerCase();
   if (l.startsWith('es')) return 'Ver tráiler de';
@@ -562,23 +577,34 @@ async function searchBestYoutubeVideo({ title, year, lang, serpKey, kind }) {
   if (!serpKey || !title) return null;
 
   const langWord = getLangWord(lang);
+  const hl = (lang || 'en-US').split('-')[0].toLowerCase(); // es, en, fr...
+  const gl = getRegionFromLang(lang);
+  const isEnglishUser = hl === 'en';
 
   let querySuffix;
   if (kind === 'ending') {
-    if (year) querySuffix = `${year} ending explained full movie`;
-    else querySuffix = `ending explained full movie`;
+    if (hl === 'es') {
+      querySuffix = year ? `${year} final explicado` : `final explicado`;
+    } else {
+      querySuffix = year ? `${year} ending explained` : `ending explained`;
+    }
   } else {
-    // making
-    if (year) querySuffix = `${year} making of movie`;
-    else querySuffix = `making of movie`;
+    if (hl === 'es') {
+      querySuffix = year ? `${year} making of pelicula` : `making of pelicula`;
+    } else {
+      querySuffix = year ? `${year} making of movie` : `making of movie`;
+    }
   }
 
   const searchQuery = `${title} ${querySuffix}`;
+
   const url =
     `https://serpapi.com/search?engine=youtube` +
     `&search_query=${encodeURIComponent(searchQuery)}` +
     `&api_key=${encodeURIComponent(serpKey)}` +
-    `&num=10`;
+    `&num=10` +
+    `&hl=${encodeURIComponent(hl)}` +
+    `&gl=${encodeURIComponent(gl)}`;
 
   const res = await fetch(url);
   if (!res.ok) return null;
@@ -603,7 +629,9 @@ async function searchBestYoutubeVideo({ title, year, lang, serpKey, kind }) {
   function score(item) {
     const t = (item.title || '').toLowerCase();
     const d = (item.description || '').toLowerCase();
-    const duration = parseDurationToSeconds(item.rich_snippet && item.rich_snippet.top && item.rich_snippet.top.duration);
+    const duration = parseDurationToSeconds(
+      item.rich_snippet && item.rich_snippet.top && item.rich_snippet.top.duration
+    );
 
     let s = 0;
 
@@ -614,8 +642,8 @@ async function searchBestYoutubeVideo({ title, year, lang, serpKey, kind }) {
     if (kind === 'ending') {
       if (t.includes('ending explained') || d.includes('ending explained')) s += 8;
       if (t.includes('final explicado') || d.includes('final explicado')) s += 8;
-      if (duration >= 180) s += 3; // mínimo 3 minutos
-      if (duration < 60) s -= 4;   // evitar shorts
+      if (duration >= 180) s += 3;
+      if (duration < 60) s -= 4;
     } else {
       if (t.includes('making of') || d.includes('making of')) s += 6;
       if (t.includes('behind the scenes') || d.includes('behind the scenes')) s += 6;
@@ -625,7 +653,10 @@ async function searchBestYoutubeVideo({ title, year, lang, serpKey, kind }) {
     }
 
     // Idioma aproximado
-    if (t.includes(langWord) || d.includes(langWord)) s += 4;
+    if (t.includes(langWord) || d.includes(langWord)) s += 6;
+
+    // Si el usuario NO es inglés, penalizar explícitamente cosas marcadas como "english"
+    if (!isEnglishUser && (t.includes('english') || d.includes('english'))) s -= 4;
 
     // Penalizar cosas tipo tráiler otra vez
     if (t.includes('trailer') || d.includes('trailer')) s -= 5;
@@ -644,7 +675,8 @@ async function searchBestYoutubeVideo({ title, year, lang, serpKey, kind }) {
     }
   }
 
-  if (!best || bestScore <= 0) return null; // si todo puntúa mal, mejor no devolver nada
+  // Si nada supera un umbral razonable, mejor no devolver nada
+  if (!best || bestScore <= 5) return null;
 
   return {
     kind,
