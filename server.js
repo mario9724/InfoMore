@@ -5,22 +5,22 @@ const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configuración TMDb
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
-const TMDB_LANGUAGE = process.env.TMDB_LANGUAGE || 'es-ES';
+// Valores por defecto (opcionales)
+const DEFAULT_TMDB_API_KEY = process.env.TMDB_API_KEY || '';
+const DEFAULT_TMDB_LANGUAGE = process.env.TMDB_LANGUAGE || 'es-ES';
 
 app.use(cors());
 app.use(express.json());
 
 // Convertir IMDb ID -> TMDb ID (movie o tv)
-async function imdbToTmdbId(imdbId, type) {
+async function imdbToTmdbId(imdbId, type, apiKey, language) {
   try {
     const url = `https://api.themoviedb.org/3/find/${imdbId}`;
     const { data } = await axios.get(url, {
       params: {
-        api_key: TMDB_API_KEY,
+        api_key: apiKey,
         external_source: 'imdb_id',
-        language: TMDB_LANGUAGE
+        language
       }
     });
 
@@ -43,13 +43,13 @@ async function imdbToTmdbId(imdbId, type) {
 }
 
 // Obtener tráiler (movie o tv) desde TMDb
-async function getTrailerFromTmdb(tmdbId, type, language) {
+async function getTrailerFromTmdb(tmdbId, type, apiKey, language) {
   try {
     const basePath = type === 'series' ? 'tv' : 'movie';
     const url = `https://api.themoviedb.org/3/${basePath}/${tmdbId}/videos`;
     const { data } = await axios.get(url, {
       params: {
-        api_key: TMDB_API_KEY,
+        api_key: apiKey,
         language
       }
     });
@@ -71,14 +71,14 @@ async function getTrailerFromTmdb(tmdbId, type, language) {
 }
 
 // Obtener detalles (nombre + año) desde TMDb
-async function getTitleAndYearFromTmdb(tmdbId, type) {
+async function getTitleAndYearFromTmdb(tmdbId, type, apiKey, language) {
   try {
     const basePath = type === 'series' ? 'tv' : 'movie';
     const url = `https://api.themoviedb.org/3/${basePath}/${tmdbId}`;
     const { data } = await axios.get(url, {
       params: {
-        api_key: TMDB_API_KEY,
-        language: TMDB_LANGUAGE
+        api_key: apiKey,
+        language
       }
     });
 
@@ -99,16 +99,34 @@ async function getTitleAndYearFromTmdb(tmdbId, type) {
   }
 }
 
-// Manifest del addon
+// Manifest del addon (con config de usuario)
 const manifest = {
   id: 'org.trailio.trailers',
-  version: '1.3.1',
+  version: '1.5.0',
   name: 'Trailio Trailers',
   description: 'Tráilers de YouTube usando TMDb (películas y series)',
   types: ['movie', 'series'],
   catalogs: [],
   resources: ['stream'],
-  idPrefixes: ['tt', 'tmdb:']
+  idPrefixes: ['tt', 'tmdb:'],
+  behaviorHints: {
+    configurable: true,
+    configurationRequired: true
+  },
+  config: [
+    {
+      key: 'tmdbApiKey',
+      title: 'TMDb API Key',
+      type: 'text',
+      required: true
+    },
+    {
+      key: 'language',
+      title: 'Idioma TMDb (ej. es-ES, en-US)',
+      type: 'text',
+      required: false
+    }
+  ]
 };
 
 // Manifest
@@ -125,6 +143,18 @@ app.get('/stream/:type/:id.json', async (req, res) => {
     return res.json({ streams: [] });
   }
 
+  // Leer config del usuario (si Stremio la envía como query)
+  const userTmdbKey = (req.query.tmdbApiKey || '').trim();
+  const userLang = (req.query.language || '').trim();
+
+  const tmdbKeyToUse = userTmdbKey || DEFAULT_TMDB_API_KEY;
+  const langToUse = userLang || DEFAULT_TMDB_LANGUAGE;
+
+  if (!tmdbKeyToUse) {
+    console.log('Sin TMDb API key configurada (usuario ni servidor)');
+    return res.json({ streams: [] });
+  }
+
   // Siempre limpiar: tt22202452:1:1 -> tt22202452
   let cleanId = id;
   if (cleanId.startsWith('tt')) {
@@ -136,7 +166,7 @@ app.get('/stream/:type/:id.json', async (req, res) => {
   if (cleanId.startsWith('tmdb:')) {
     tmdbId = cleanId.replace('tmdb:', '');
   } else if (cleanId.startsWith('tt')) {
-    tmdbId = await imdbToTmdbId(cleanId, type);
+    tmdbId = await imdbToTmdbId(cleanId, type, tmdbKeyToUse, langToUse);
   } else {
     return res.json({ streams: [] });
   }
@@ -147,12 +177,17 @@ app.get('/stream/:type/:id.json', async (req, res) => {
 
   try {
     // Detalles para “Nombre (año)”
-    const displayName = await getTitleAndYearFromTmdb(tmdbId, type);
+    const displayName = await getTitleAndYearFromTmdb(
+      tmdbId,
+      type,
+      tmdbKeyToUse,
+      langToUse
+    );
 
     // Tráiler (idioma preferido + fallback EN)
-    let trailer = await getTrailerFromTmdb(tmdbId, type, TMDB_LANGUAGE);
+    let trailer = await getTrailerFromTmdb(tmdbId, type, tmdbKeyToUse, langToUse);
     if (!trailer) {
-      trailer = await getTrailerFromTmdb(tmdbId, type, 'en-US');
+      trailer = await getTrailerFromTmdb(tmdbId, type, tmdbKeyToUse, 'en-US');
     }
 
     if (!trailer) {
@@ -162,9 +197,9 @@ app.get('/stream/:type/:id.json', async (req, res) => {
 
     // Texto del botón según idioma configurado
     let playLabel = 'Play trailer';
-    if (TMDB_LANGUAGE.startsWith('es')) playLabel = 'Ver tráiler';
-    else if (TMDB_LANGUAGE.startsWith('pt')) playLabel = 'Ver trailer';
-    else if (TMDB_LANGUAGE.startsWith('fr')) playLabel = 'Voir la bande-annonce';
+    if (langToUse.startsWith('es')) playLabel = 'Ver tráiler';
+    else if (langToUse.startsWith('pt')) playLabel = 'Ver trailer';
+    else if (langToUse.startsWith('fr')) playLabel = 'Voir la bande-annonce';
 
     const youtubeKey = trailer.key;
     let title = trailer.name || 'Trailer';
@@ -187,9 +222,30 @@ app.get('/stream/:type/:id.json', async (req, res) => {
   }
 });
 
-// Salud
+// Web sencilla de instalación / info (opcional)
 app.get('/', (req, res) => {
-  res.send('Trailio addon activo');
+  res.send(`
+    <!doctype html>
+    <html lang="es">
+      <head>
+        <meta charset="utf-8" />
+        <title>Trailio Trailers</title>
+      </head>
+      <body>
+        <h1>Trailio Trailers</h1>
+        <p>Addon de Stremio para ver tráilers de películas y series usando TMDb.</p>
+        <p>URL de instalación (manifiesto):</p>
+        <pre>https://trailio.onrender.com/manifest.json</pre>
+        <button onclick="copy()">Copiar URL</button>
+        <script>
+          function copy() {
+            navigator.clipboard.writeText('https://trailio.onrender.com/manifest.json');
+            alert('Copiado. Pega la URL en Stremio → Add-ons → Add-on URL.');
+          }
+        </script>
+      </body>
+    </html>
+  `);
 });
 
 app.listen(PORT, () => {
