@@ -102,7 +102,7 @@ async function getTitleAndYearFromTmdb(tmdbId, type) {
 // Manifest del addon
 const manifest = {
   id: 'org.trailio.trailers',
-  version: '1.1.1',
+  version: '1.2.0',
   name: 'Trailio Trailers',
   description: 'Tráilers de YouTube usando TMDb (películas y series)',
   types: ['movie', 'series'],
@@ -160,16 +160,22 @@ app.get('/stream/:type/:id.json', async (req, res) => {
       return res.json({ streams: [] });
     }
 
+    // Texto del botón según idioma configurado
+    let playLabel = 'Play trailer';
+    if (TMDB_LANGUAGE.startsWith('es')) playLabel = 'Ver tráiler';
+    else if (TMDB_LANGUAGE.startsWith('pt')) playLabel = 'Ver trailer';
+    else if (TMDB_LANGUAGE.startsWith('fr')) playLabel = 'Voir la bande-annonce';
+
     const youtubeKey = trailer.key;
     let title = trailer.name || 'Trailer';
-    title = title.replace(/\[.*?\]/g, '').trim(); // limpia [Subtitled], [HD], etc.
+    title = title.replace(/\[.*?\]/g, '').trim();
 
     console.log('Stream Trailio:', youtubeKey, title, '=>', displayName);
 
     return res.json({
       streams: [
         {
-          name: 'Ver tráiler',
+          name: playLabel,
           description: displayName || title,
           ytId: youtubeKey
         }
