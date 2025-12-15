@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 // Manifest base
 const manifest = {
   id: "trailio-addon",
-  version: "1.1.1",
+  version: "1.1.2",
   name: "Trailer",
   description: "Addon de Stremio para buscar trailers en TMDb con clave por usuario",
   types: ["movie", "series"],
@@ -387,7 +387,13 @@ app.get('/configure', (req, res) => {
 
     installBtn.addEventListener('click', function () {
       if (!lastUrl) return;
-      window.location.href = lastUrl;
+      try {
+        const httpUrl = new URL(lastUrl);
+        const stremioUrl = 'stremio://' + httpUrl.host + httpUrl.pathname + httpUrl.search;
+        window.location.href = stremioUrl;
+      } catch (e) {
+        window.location.href = lastUrl;
+      }
     });
   </script>
 </body>
@@ -412,7 +418,6 @@ app.get('/manifest.json', (req, res) => {
 async function getTrailerFromTmdb({ imdbId, type, tmdbKey, lang }) {
   const language = lang || 'en-US';
 
-  // limpiar id: tt1234567 o tt1234567:1:1 -> tt1234567
   const cleanId = imdbId.split(':')[0];
 
   const findUrl =
