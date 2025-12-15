@@ -102,7 +102,7 @@ async function getTitleAndYearFromTmdb(tmdbId, type) {
 // Manifest del addon
 const manifest = {
   id: 'org.trailio.trailers',
-  version: '1.2.0',
+  version: '1.3.0',
   name: 'Trailio Trailers',
   description: 'Tráilers de YouTube usando TMDb (películas y series)',
   types: ['movie', 'series'],
@@ -125,7 +125,13 @@ app.get('/stream/:type/:id.json', async (req, res) => {
     return res.json({ streams: [] });
   }
 
-  // Limpiar IDs tipo tt22202452:1:1 -> tt22202452
+  // Solo tráiler por serie: ignorar episodios (tt...:season:episode)
+  if (type === 'series' && id.includes(':')) {
+    console.log('Ignorando episodio, solo tráiler por serie');
+    return res.json({ streams: [] });
+  }
+
+  // Limpiar IDs tipo tmdb: y tt...
   let cleanId = id;
   if (cleanId.startsWith('tt')) {
     cleanId = cleanId.split(':')[0];
