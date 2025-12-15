@@ -8,7 +8,7 @@ const PORT = process.env.PORT || 3000;
 const manifest = {
   id: "trailio-addon",
   version: "1.0.0",
-  name: "Trailio",
+  name: "Tráiler", // nombre fijo que muestra Stremio
   description: "Addon de Stremio para buscar trailers en TMDb con clave por usuario",
   types: ["movie", "series"],
   catalogs: [],
@@ -27,7 +27,7 @@ app.get('/configure', (req, res) => {
     <html lang="es">
     <head>
       <meta charset="UTF-8" />
-      <title>Configurar Trailio</title>
+      <title>Configurar Tráiler</title>
       <style>
         body { font-family: sans-serif; max-width: 600px; margin: 40px auto; }
         label { display: block; margin-top: 12px; }
@@ -37,7 +37,7 @@ app.get('/configure', (req, res) => {
       </style>
     </head>
     <body>
-      <h1>Configurar Trailio</h1>
+      <h1>Configurar Tráiler</h1>
       <p>Introduce tu clave de TMDb y genera la URL para instalar el add-on en Stremio.</p>
 
       <label>
@@ -199,18 +199,18 @@ app.get('/stream/:type/:id.json', async (req, res) => {
     // Normalizar idioma a minúsculas tipo "es", "es-es"
     const l = (lang || 'en-US').toLowerCase();
 
-    // Traducciones de la primera línea
+    // Traducciones de "Ver tráiler de"
     let prefix;
     if (l.startsWith('es')) {
-      prefix = 'Ver tráiler';
+      prefix = 'Ver tráiler de';
     } else if (l.startsWith('pt')) {
-      prefix = 'Ver trailer';
+      prefix = 'Ver trailer de';
     } else if (l.startsWith('fr')) {
-      prefix = 'Voir la bande-annonce';
+      prefix = 'Voir la bande-annonce de';
     } else if (l.startsWith('de')) {
-      prefix = 'Trailer ansehen';
+      prefix = 'Trailer ansehen von';
     } else if (l.startsWith('it')) {
-      prefix = 'Guarda il trailer';
+      prefix = 'Guarda il trailer di';
     } else if (l.startsWith('ru')) {
       prefix = 'Смотреть трейлер';
     } else if (l.startsWith('tr')) {
@@ -223,16 +223,12 @@ app.get('/stream/:type/:id.json', async (req, res) => {
       prefix = '予告編を見る';
     } else {
       // cualquier otro idioma por defecto en inglés
-      prefix = 'Play trailer';
+      prefix = 'Play trailer for';
     }
 
-    // Línea 2: Nombre (Año)
-    const line2 = name ? `${name}${year ? ' (' + year + ')' : ''}` : '';
-
-    // Título final:
-    // Ver tráiler
-    // Nombre (Año)
-    const streamTitle = line2 ? `${prefix}\n${line2}` : prefix;
+    // Texto final: "Ver tráiler de Nombre (Año)"
+    const mainTitle = name ? `${name}${year ? ' (' + year + ')' : ''}` : '';
+    const streamTitle = mainTitle ? `${prefix} ${mainTitle}` : prefix;
 
     res.json({
       streams: [
@@ -250,9 +246,9 @@ app.get('/stream/:type/:id.json', async (req, res) => {
 
 // Raíz
 app.get('/', (req, res) => {
-  res.send('Trailio addon funcionando. Usa /manifest.json o /configure.');
+  res.send('Addon Tráiler funcionando. Usa /manifest.json o /configure.');
 });
 
 app.listen(PORT, () => {
-  console.log('Trailio addon running on port ' + PORT);
+  console.log('Tráiler addon running on port ' + PORT);
 });
