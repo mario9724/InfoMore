@@ -355,10 +355,10 @@ async function getTrailerFromTmdb({ imdbId, type, tmdbKey, lang }) {
   const cleanId = imdbId.split(':')[0];
 
   const findUrl =
-    \`https://api.themoviedb.org/3/find/\${encodeURIComponent(cleanId)}\` +
-    \`?api_key=\${encodeURIComponent(tmdbKey)}\` +
-    \`&language=\${encodeURIComponent(language)}\` +
-    \`&external_source=imdb_id\`;
+    `https://api.themoviedb.org/3/find/${encodeURIComponent(cleanId)}` +
+    `?api_key=${encodeURIComponent(tmdbKey)}` +
+    `&language=${encodeURIComponent(language)}` +
+    `&external_source=imdb_id`;
 
   const findRes = await fetch(findUrl);
   if (!findRes.ok) throw new Error('TMDb find error');
@@ -384,9 +384,9 @@ async function getTrailerFromTmdb({ imdbId, type, tmdbKey, lang }) {
 
   const kind = type === 'series' ? 'tv' : 'movie';
   const videosUrl =
-    \`https://api.themoviedb.org/3/\${kind}/\${tmdbId}/videos\` +
-    \`?api_key=\${encodeURIComponent(tmdbKey)}\` +
-    \`&language=\${encodeURIComponent(language)}\`;
+    `https://api.themoviedb.org/3/${kind}/${tmdbId}/videos` +
+    `?api_key=${encodeURIComponent(tmdbKey)}` +
+    `&language=${encodeURIComponent(language)}`;
 
   const videosRes = await fetch(videosUrl);
   if (!videosRes.ok) throw new Error('TMDb videos error');
@@ -403,7 +403,7 @@ async function getTrailerFromTmdb({ imdbId, type, tmdbKey, lang }) {
 
   if (!trailer || trailer.site !== 'YouTube' || !trailer.key) return null;
 
-  const youtubeUrl = \`https://www.youtube.com/watch?v=\${trailer.key}\`;
+  const youtubeUrl = `https://www.youtube.com/watch?v=${trailer.key}`;
 
   return {
     url: youtubeUrl,
@@ -462,8 +462,8 @@ app.get('/stream/:type/:id.json', async (req, res) => {
       prefix = 'Play trailer for';
     }
 
-    const mainTitle = name ? \`\${name}\${year ? ' (' + year + ')' : ''}\` : '';
-    const streamTitle = mainTitle ? \`\${prefix} \${mainTitle}\` : prefix;
+    const mainTitle = name ? `${name}${year ? ' (' + year + ')' : ''}` : '';
+    const streamTitle = mainTitle ? `${prefix} ${mainTitle}` : prefix;
 
     res.json({
       streams: [
